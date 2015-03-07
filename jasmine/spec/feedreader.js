@@ -43,12 +43,23 @@ $(function() {
     });
 
     describe('The menu', function() {
+        // this spec will be used several times in this suite
+        // so I'm defining it explicitly to be able to re-use
+        // the expectation from multiple specs
+        var expectHidden = function() {
+            expect(document.body.classList).toContain('menu-hidden');
+        };
+
+        // the counterpart of above re-usable expectation
+        // (be-tofu concept was not lost on me :)
+        var expectVisible = function() {
+            expect(document.body.classList).not.toContain('menu-hidden');
+        };
+
         /* Menu is hidden when menu-hidden class is cascaded upon
          * the menu element.
          */
-        it('is hidden by default', function() {
-            expect(document.body.classList).toContain("menu-hidden");
-        });
+        it('is hidden by default', expectHidden);
 
         /* Another way to check for that is to actually check if the
          * menu's transform places it outside the viewport.
@@ -62,7 +73,7 @@ $(function() {
 
             // get the transform value from the computer style of the menu
             var computedStyle = window.getComputedStyle(menu, null);
-            var matrix = computedStyle.getPropertyValue("transform");
+            var matrix = computedStyle.getPropertyValue('transform');
 
             // 2d-transform should be in the format matrix(a, b, c, d, tx, ty)
             // tx in our case must be negative - since menu is to
@@ -74,19 +85,20 @@ $(function() {
             expect(tx).toBeLessThan(0);
         });
 
-         /* TODO: Write a test that ensures the menu changes
-          * visibility when the menu icon is clicked. This test
-          * should have two expectations: does the menu display when
-          * clicked and does it hide when clicked again.
-          */
+        // clicking on the menu toggles its visibility
         it('toggles its visibility on click', function() {
             $('.menu-icon-link').trigger('click');
-            expect(document.body.classList).not.toContain("menu-hidden");
+            expectVisible();
+
             $('.menu-icon-link').trigger('click');
-            expect(document.body.classList).toContain("menu-hidden");
+            expectHidden();
         });
     });
-    /* TODO: Write a new test suite named "Initial Entries" */
+
+    describe('Initial Entries', function() {
+        beforeEach(function(done) {
+            loadFeed(0, done);
+        });
 
         /* TODO: Write a test that ensures when the loadFeed
          * function is called and completes its work, there is at least
@@ -94,11 +106,57 @@ $(function() {
          * Remember, loadFeed() is asynchronous so this test wil require
          * the use of Jasmine's beforeEach and asynchronous done() function.
          */
+        it('appear after loadFeed call', function() {
+            var entries = $('.entry', $('.feed'));
+            expect(entries.length).toBeGreaterThan(0);
+        });
+    });
 
-    /* TODO: Write a new test suite named "New Feed Selection"
+    describe('New Feed Selection', function() {
+        beforeEach(function(done) {
+            loadFeed(0, done);
+        });
 
-        /* TODO: Write a test that ensures when a new feed is loaded
-         * by the loadFeed function that the content actually changes.
-         * Remember, loadFeed() is asynchronous.
-         */
+        // return titles of each entry populated by loadFeed
+        var titles = function() {
+            var entries = $('.entry', $('.feed'));
+            return entries.map(function(_, entry) {
+                return $('h2', entry).text();
+            });
+        };
+
+        var expectNewEntries = function(done) {
+           var initialTitles = titles();
+
+            // load another feed (with index 1)
+            // and ensure new titles have been loaded
+            loadFeed(1, function() {
+                var newTitles = titles();
+                expect(newTitles).not.toEqual(initialTitles);
+
+                // signal Jasmine that we are done with this spec
+                done();
+            });
+        };
+
+        // change the feed and ensure that new entries apppear
+        it('updates the entries', function(done) {
+            expectNewEntries(done);
+        });
+
+        it('clicking on another feed loads its entries', function(done) {
+            var lf = loadFeed;
+            var initialTitles = titles();
+            spyOn(window, 'loadFeed').and.callFake(function(feed_id) {
+                lf(feed_id, function() {
+                    var newTitles = titles();
+                    expect(newTitles).not.toEqual(initialTitles);
+
+                    // signal Jasmine that we are done with this spec
+                    done();
+                });
+            });
+            $($('a', $('.feed-list'))[1]).trigger('click');
+        });
+    });
 }());
