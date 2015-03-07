@@ -27,38 +27,51 @@ $(function() {
         });
 
 
-        /* TODO: Write a test that loops through each feed
-         * in the allFeeds object and ensures it has a URL defined
-         * and that the URL is not empty.
-         */
+        // Check if each url at least roughly looks like an http URL
         it('define URLs', function() {
             for (var i = 0, l = allFeeds.length; i < l; ++i) {
-                expect(allFeeds[i].url).toBeDefined();
+                expect(allFeeds[i].url).toMatch(/^https?:\/\//i);
             }
         });
 
-        /* TODO: Write a test that loops through each feed
-         * in the allFeeds object and ensures it has a name defined
-         * and that the name is not empty.
-         */
+        // Non empty string is a truthy value - so let's check for that
         it('define names', function() {
             for (var i = 0, l = allFeeds.length; i < l; ++i) {
-                // non-empty strings are truthy
                 expect(allFeeds[i].name).toBeTruthy();
             }
         });
     });
 
-
-    /* TODO: Write a new test suite named "The menu" */
     describe('The menu', function() {
-        /* TODO: Write a test that ensures the menu element is
-         * hidden by default. You'll have to analyze the HTML and
-         * the CSS to determine how we're performing the
-         * hiding/showing of the menu element.
+        /* Menu is hidden when menu-hidden class is cascaded upon
+         * the menu element.
          */
         it('is hidden by default', function() {
             expect(document.body.classList).toContain("menu-hidden");
+        });
+
+        /* Another way to check for that is to actually check if the
+         * menu's transform places it outside the viewport.
+         * It's a more involved spec and too-coupled to the implementation
+         * as well - however being Udacious you'll never know if that
+         * might help down the road
+         * (being able to write more involved specs that is)
+         */
+        it('animated away by default', function() {
+            var menu = $('.menu')[0];
+
+            // get the transform value from the computer style of the menu
+            var computedStyle = window.getComputedStyle(menu, null);
+            var matrix = computedStyle.getPropertyValue("transform");
+
+            // 2d-transform should be in the format matrix(a, b, c, d, tx, ty)
+            // tx in our case must be negative - since menu is to
+            // the left of the viewport
+            var re = /matrix\(.*?,.*?,.*?,.*?,(\s-\d+(?:\.\d*)?),.*?\)/i;
+            expect(matrix).toMatch(re);
+
+            var tx = parseInt(matrix.match(re)[1], 10);
+            expect(tx).toBeLessThan(0);
         });
 
          /* TODO: Write a test that ensures the menu changes
