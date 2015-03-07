@@ -31,29 +31,48 @@ $(function() {
          * in the allFeeds object and ensures it has a URL defined
          * and that the URL is not empty.
          */
-
+        it('define URLs', function() {
+            for (var i = 0, l = allFeeds.length; i < l; ++i) {
+                expect(allFeeds[i].url).toBeDefined();
+            }
+        });
 
         /* TODO: Write a test that loops through each feed
          * in the allFeeds object and ensures it has a name defined
          * and that the name is not empty.
          */
+        it('define names', function() {
+            for (var i = 0, l = allFeeds.length; i < l; ++i) {
+                // non-empty strings are truthy
+                expect(allFeeds[i].name).toBeTruthy();
+            }
+        });
     });
 
 
     /* TODO: Write a new test suite named "The menu" */
-
+    describe('The menu', function() {
         /* TODO: Write a test that ensures the menu element is
          * hidden by default. You'll have to analyze the HTML and
          * the CSS to determine how we're performing the
          * hiding/showing of the menu element.
          */
+        it('is hidden by default', function() {
+            expect(document.body.classList).toContain("menu-hidden");
+        });
 
          /* TODO: Write a test that ensures the menu changes
           * visibility when the menu icon is clicked. This test
           * should have two expectations: does the menu display when
           * clicked and does it hide when clicked again.
           */
-
+        it('toggles its visibility on click', function() {
+            $('.menu-icon-link').trigger('click');
+            expect(document.body.classList).not.toContain("menu-hidden");
+            $('.menu-icon-link').trigger('click');
+            expect(document.body.classList).toContain("menu-hidden");
+        });
+    });
     /* TODO: Write a new test suite named "Initial Entries" */
 
         /* TODO: Write a test that ensures when the loadFeed
