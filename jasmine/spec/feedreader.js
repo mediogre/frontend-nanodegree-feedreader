@@ -10,9 +10,9 @@
  */
 $(function() {
     /* This is our first test suite - a test suite just contains
-    * a related set of tests. This suite is all about the RSS
-    * feeds definitions, the allFeeds variable in our application.
-    */
+     * a related set of tests. This suite is all about the RSS
+     * feeds definitions, the allFeeds variable in our application.
+     */
     describe('RSS Feeds', function() {
         /* This is our first test - it tests to make sure that the
          * allFeeds variable has been defined and that it is not
@@ -25,7 +25,6 @@ $(function() {
             expect(allFeeds).toBeDefined();
             expect(allFeeds.length).not.toBe(0);
         });
-
 
         // Check if each url at least roughly looks like an http URL
         it('define URLs', function() {
@@ -43,15 +42,17 @@ $(function() {
     });
 
     describe('The menu', function() {
-        // this spec will be used several times in this suite
-        // so I'm defining it explicitly to be able to re-use
-        // the expectation from multiple specs
+        /* This spec will be used several times in this suite
+         * so I'm defining it explicitly to be able to re-use
+         * the expectation from multiple specs
+         */
         var expectHidden = function() {
             expect(document.body.classList).toContain('menu-hidden');
         };
 
-        // the counterpart of above re-usable expectation
-        // (be-tofu concept was not lost on me :)
+        /* the counterpart of the above re-usable expectation
+         * (be-tofu concept was not lost on me :)
+         */
         var expectVisible = function() {
             expect(document.body.classList).not.toContain('menu-hidden');
         };
@@ -62,7 +63,7 @@ $(function() {
         it('is hidden by default', expectHidden);
 
         /* Another way to check for that is to actually check if the
-         * menu's transform places it outside the viewport.
+         * menu's transform places it outside of the viewport.
          * It's a more involved spec and too-coupled to the implementation
          * as well - however being Udacious you'll never know if that
          * might help down the road
@@ -87,36 +88,36 @@ $(function() {
 
         // clicking on the menu toggles its visibility
         it('toggles its visibility on click', function() {
-            $('.menu-icon-link').trigger('click');
+            var icon = $('.menu-icon-link');
+
+            icon.trigger('click');
             expectVisible();
 
-            $('.menu-icon-link').trigger('click');
+            icon.trigger('click');
             expectHidden();
         });
     });
 
     describe('Initial Entries', function() {
+        /* using callback facility of loadFeed
+         * to ensure that loadFeed fully completes
+         * before each spec of this suite is run
+         */
         beforeEach(function(done) {
             loadFeed(0, done);
         });
 
-        /* TODO: Write a test that ensures when the loadFeed
-         * function is called and completes its work, there is at least
-         * a single .entry element within the .feed container.
-         * Remember, loadFeed() is asynchronous so this test wil require
-         * the use of Jasmine's beforeEach and asynchronous done() function.
+        /* Assuming that loadFeed has not errored out,
+         * we can now check if entries have been populated
          */
         it('appear after loadFeed call', function() {
+            // we are interested in every .entry under the .feed
             var entries = $('.entry', $('.feed'));
             expect(entries.length).toBeGreaterThan(0);
         });
     });
 
     describe('New Feed Selection', function() {
-        beforeEach(function(done) {
-            loadFeed(0, done);
-        });
-
         // return titles of each entry populated by loadFeed
         var titles = function() {
             var entries = $('.entry', $('.feed'));
@@ -125,38 +126,55 @@ $(function() {
             });
         };
 
-        var expectNewEntries = function(done) {
-           var initialTitles = titles();
+        // this will create a callback that can be passed to loadFeed
+        // internally it handles all the gory details of:
+        // - comparing titles (which we equate to having new entries loaded)
+        // - signaling Jasmine that async spec is finished
+        var compareTitlesCb = function(done) {
+            // grab the current titles
+            var initialTitles = titles();
 
-            // load another feed (with index 1)
-            // and ensure new titles have been loaded
-            loadFeed(1, function() {
+            // this function can now be passed to loadFeed as a callback
+            // it will grab (hopefully) new titles,
+            // compare them against the previous ones,
+            // and be kind enough to signal Jasmine that we are done
+            return function() {
+                // grab updated titles
                 var newTitles = titles();
+
                 expect(newTitles).not.toEqual(initialTitles);
 
                 // signal Jasmine that we are done with this spec
                 done();
-            });
+            };
         };
+
+        // loading first feed source before each spec
+        beforeEach(function(done) {
+            loadFeed(0, done);
+        });
 
         // change the feed and ensure that new entries apppear
         it('updates the entries', function(done) {
-            expectNewEntries(done);
+            loadFeed(1, compareTitlesCb(done));
         });
 
+        // the same as the spec above, but instead of programmatically
+        // loading the feed, we try to actually 'click' another feed link from the menu
         it('clicking on another feed loads its entries', function(done) {
+            // the real loadFeed
             var lf = loadFeed;
-            var initialTitles = titles();
-            spyOn(window, 'loadFeed').and.callFake(function(feed_id) {
-                lf(feed_id, function() {
-                    var newTitles = titles();
-                    expect(newTitles).not.toEqual(initialTitles);
 
-                    // signal Jasmine that we are done with this spec
-                    done();
-                });
+            // replace global loadFeed with our spy,
+            // which will call the real loadFeed with our callback,
+            // which will check all the expectations
+            spyOn(window, 'loadFeed').and.callFake(function(feed_id) {
+                lf(feed_id, compareTitlesCb(done));
             });
-            $($('a', $('.feed-list'))[1]).trigger('click');
+
+            // click on the second feed
+            var link = $('a', $('.feed-list'))[1];
+            $(link).trigger('click');
         });
     });
 }());
