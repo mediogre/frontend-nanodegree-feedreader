@@ -169,8 +169,8 @@ $(function() {
             // replace global loadFeed with our spy,
             // which will call the real loadFeed with our callback,
             // which will check all the expectations
-            spyOn(window, 'loadFeed').and.callFake(function(feed_id) {
-                lf(feed_id, compareTitlesCb(done));
+            spyOn(window, 'loadFeed').and.callFake(function(feedId) {
+                lf(feedId, compareTitlesCb(done));
             });
 
             // click on the second feed
@@ -179,6 +179,8 @@ $(function() {
         });
     });
 
+    // using real API calls is slow in general,
+    // mocks to the rescue
     describe('API mocking', function() {
         beforeEach(function() {
             // clean up feed results and feed title
@@ -188,7 +190,7 @@ $(function() {
         });
 
         // example of what Google Feed Reader API returns
-        var feed_mock = {
+        var feedMock = {
             error: undefined,
             feed: {
                 "feedUrl": "http://blog.udacity.com/feeds/posts/default?alt\u003drss",
@@ -238,15 +240,15 @@ $(function() {
             // having better designed functions allows to test things more
             // comfortably, just rendering the received feed,
             // no async handling required
-            renderFeed(feed_mock);
+            renderFeed(feedMock);
 
             var entries = $('.entry', $('.feed'));
 
-            // since we know exactly what "feed API" will have returned
+            // since we know exactly what 'feed API' will have returned
             // we can make exact expectations
             expect(entries.length).toBe(4);
 
-            var feed = feed_mock.feed;
+            var feed = feedMock.feed;
             // check that title has been properly updated
             expect($('.header-title').text()).toBe(feed.title);
 
