@@ -160,7 +160,8 @@ $(function() {
         });
 
         // the same as the spec above, but instead of programmatically
-        // loading the feed, we try to actually 'click' another feed link from the menu
+        // loading the feed, we try to actually 'click' another
+        // feed link from the menu
         it('clicking on another feed loads its entries', function(done) {
             // the real loadFeed
             var lf = loadFeed;
@@ -175,6 +176,89 @@ $(function() {
             // click on the second feed
             var link = $('a', $('.feed-list'))[1];
             $(link).trigger('click');
+        });
+    });
+
+    describe('API mocking', function() {
+        beforeEach(function() {
+            // clean up feed results and feed title
+            // we'll be using mocked json to get them back shortly
+            $('.header-title').empty();
+            $('.feed').empty();
+        });
+
+        // example of what Google Feed Reader API returns
+        var feed_mock = {
+            error: undefined,
+            feed: {
+                "feedUrl": "http://blog.udacity.com/feeds/posts/default?alt\u003drss",
+                "title": "Udacity Blog",
+                "link": "http://blog.udacity.com/",
+                "author": "",
+                "description": "Advance your education and your career with project-based, self-paced online courses in tech.",
+                "type":"rss20",
+                "entries": [
+                    {"title":"4 Times Data Science Saved the Day",
+                     "link":"http://blog.udacity.com/2014/12/4-times-data-science-saved-day_3.html",
+                     "author":"noreply@blogger.com (Mark Nguyen)",
+                     "publishedDate":"Wed, 03 Dec 2014 10:31:00 -0800",
+                     "contentSnippet":"",
+                     "content":"",
+                     "categories":["Data Science"]
+                    },
+                    {"title":"Dawoon Choi: Golfer to Programmer",
+                     "link":"http://blog.udacity.com/2014/11/student-stories-dawoon-choi-programmer.html",
+                     "author":"noreply@blogger.com (ChiWei Ranck)",
+                     "publishedDate":"Fri, 28 Nov 2014 07:26:00 -0800",
+                     "contentSnippet":"",
+                     "content":"",
+                     "categories":["front-end web dev","Nanodegrees","Student Stories"]
+                    },
+                    {"title":"Data Analysts: What You\'ll Make and Where You\'ll Make It",
+                     "link":"http://blog.udacity.com/2014/11/data-analysts-what-youll-make.html",
+                     "author":"noreply@blogger.com (Allison Stadd)",
+                     "publishedDate":"Wed, 26 Nov 2014 08:00:00 -0800",
+                     "contentSnippet":"",
+                     "content":"",
+                     "categories":["Careers","Data Science"]
+                    },
+                    {"title":"Informational Interviews: How to Find Your Next Job Over Coffee",
+                     "link":"http://blog.udacity.com/2014/11/informational-interviews-how-to-find.html",
+                     "author":"noreply@blogger.com (Allison Jones)",
+                     "publishedDate":"Fri, 21 Nov 2014 08:50:00 -0800",
+                     "contentSnippet":"",
+                     "content":"",
+                     "categories":["Careers"]
+                    }
+                ]
+            }
+        };
+
+        it('ensures all feed data is rendered correctly', function() {
+            // having better designed functions allows to test things more
+            // comfortably, just rendering the received feed,
+            // no async handling required
+            renderFeed(feed_mock);
+
+            var entries = $('.entry', $('.feed'));
+
+            // since we know exactly what "feed API" will have returned
+            // we can make exact expectations
+            expect(entries.length).toBe(4);
+
+            var feed = feed_mock.feed;
+            // check that title has been properly updated
+            expect($('.header-title').text()).toBe(feed.title);
+
+            for (var i = 0, l = entries.length; i < l; ++i) {
+                var entry = entries[i];
+                var feedEntry = feed.entries[i];
+
+                // check feed title, contentSnippet and link
+                expect($('h2', entry).text()).toBe(feedEntry.title);
+                expect($('p', entry).text()).toBe(feedEntry.contentSnippet);
+                expect($(entry).parent().attr('href')).toBe(feedEntry.link);
+            }
         });
     });
 }());

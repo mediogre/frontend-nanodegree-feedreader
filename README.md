@@ -51,4 +51,14 @@ But on the upside, we can be more "sure" that menu is actually "invisible" with 
 * an extra spec - 'New Feed Selection clicking on another feed loads its entries'
 This one tests the scenario of actually clicking on a feed in the menu,
 and observing the changes after the feed has been loaded.
-loadFeed global function is stubbed with the spy which will call it eventually with the original argument, but will also add a callback in which we'll perform all the checks.
+nloadFeed global function is stubbed with the spy which will call it eventually with the original argument, but will also add a callback in which we'll perform all the checks.
+
+* an extra spec - 'API mocking ensures all feed data is rendered correctly'
+For this to be possible, I've refactored loadFeed function a little bit
+by splitting it into explicit "loading" and "rendering" parts:
+- loadFeeWithGoogle - which as its name implies simply loads the feed and calls the provided callback(s)
+- renderFeed is just concerned with rendering somehow obtained feed results.
+In passing I've also eliminated Handlebars templating compiling on each render.
+tpl-entry is compiled once and then re-used by each rendering.
+Now that renderFeed is easily testable, I've captured JSON returned by real API call,
+and can use it to thoroughly test the rendering part.

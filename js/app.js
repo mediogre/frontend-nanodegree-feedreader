@@ -32,6 +32,70 @@ function init() {
     loadFeed(0);
 }
 
+/**
+ * Actual feed loading attempted here using the Google Feed Reader API
+ * Having this one as a separate function make it possible to stub it out
+ * for easier testing.
+ * @param {string} feedUrl - url to load
+ * @param {function(feedResult)} feedHandler - the function callback to call
+ *                                             when the feed download completes
+ * @param {function()} extraCb - additional callback to call after feedHandler
+ */
+function loadFeedWithGoogle(feedUrl, feedHandler, extraCb) {
+    var feed = new google.feeds.Feed(feedUrl);
+
+    /* Load the feed using the Google Feed Reader API.
+     * Once the feed has been loaded, the callback function
+     * is executed.
+     */
+    feed.load(function(result) {
+        feedHandler(result);
+        extraCb && extraCb();
+    });
+}
+
+// This will contain compiled handlebars template for entry
+var entryTemplate = null;
+
+/**
+ * This function is supposed to receive feed
+ * @param result - feed object returned by Feed Reader API
+ */
+function renderFeed(result) {
+    if (result.error) {
+        // report the error somehow
+        return;
+    }
+
+    /* If loading the feed did not result in an error,
+     * get started making the DOM manipulations required
+     * to display the feed entries on screen.
+     */
+    var container = $('.feed'),
+        title = $('.header-title'),
+        entries = result.feed.entries,
+        entriesLen = entries.length;
+
+    title.html(result.feed.title);
+
+    // compile template once and save it for subsequent re-use
+    if (! entryTemplate) {
+        entryTemplate = Handlebars.compile($('.tpl-entry').html());
+    }
+
+    // Empty out all previous entries
+    container.empty();
+
+    /* Loop through the entries we just loaded via the Google
+     * Feed Reader API. We'll then parse that entry against the
+     * entryTemplate (created above using Handlebars) and append
+     * the resulting HTML to the list of entries on the page.
+     */
+    entries.forEach(function(entry) {
+        container.append(entryTemplate(entry));
+    });
+}
+
 /* This function performs everything necessary to load a
  * feed using the Google Feed Reader API. It will then
  * perform all of the DOM operations required to display
@@ -42,43 +106,10 @@ function init() {
  */
 function loadFeed(id, cb) {
     var feedUrl = allFeeds[id].url,
-        feedName = allFeeds[id].name,
-        feed = new google.feeds.Feed(feedUrl);
+        feedName = allFeeds[id].name;
 
-    /* Load the feed using the Google Feed Reader API.
-     * Once the feed has been loaded, the callback function
-     * is executed.
-     */
-    feed.load(function(result) {
-        if (!result.error) {
-            /* If loading the feed did not result in an error,
-             * get started making the DOM manipulations required
-             * to display the feed entries on screen.
-             */
-            var container = $('.feed'),
-                title = $('.header-title'),
-                entries = result.feed.entries,
-                entriesLen = entries.length,
-                entryTemplate = Handlebars.compile($('.tpl-entry').html());
-
-            title.html(feedName);   // Set the header text
-            container.empty();      // Empty out all previous entries
-
-            /* Loop through the entries we just loaded via the Google
-             * Feed Reader API. We'll then parse that entry against the
-             * entryTemplate (created above using Handlebars) and append
-             * the resulting HTML to the list of entries on the page.
-             */
-            entries.forEach(function(entry) {
-                container.append(entryTemplate(entry));
-            });
-        }
-
-        if (cb) {
-            cb();
-        }
-    });
-}
+    loadFeedWithGoogle(feedUrl, renderFeed, cb);
+ }
 
 /* Google API: Loads the Feed Reader API and defines what function
  * to call when the Feed Reader API is done loading.
